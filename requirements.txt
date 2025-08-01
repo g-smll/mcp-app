@@ -1,0 +1,7 @@
+# SiliconFlow API 客户端依赖 (chat.py)
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# MCP 客户端依赖 (client.py)
+mcp>=1.0.0
+aiohttp>=3.9.0
