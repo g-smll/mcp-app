@@ -135,16 +135,16 @@ class MCPClient:
             return []
             
         try:
-            print("正在获取提示词模板列表...")
+            # print("正在获取提示词模板列表...")
             result = await self.session.list_prompts()
             self.prompts = result.prompts
             
-            print(f"发现 {len(self.prompts)} 个提示词模板:")
-            for i, prompt in enumerate(self.prompts, 1):
-                print(f"  {i}. {prompt.name}: {prompt.description}")
-                if prompt.arguments:
-                    args = [arg.name for arg in prompt.arguments]
-                    print(f"     参数: {', '.join(args)}")
+            # print(f"发现 {len(self.prompts)} 个提示词模板:")
+            # for i, prompt in enumerate(self.prompts, 1):
+            #     print(f"  {i}. {prompt.name}: {prompt.description}")
+            #     if prompt.arguments:
+            #         args = [arg.name for arg in prompt.arguments]
+            #         print(f"     参数: {', '.join(args)}")
                     
             return self.prompts
             
@@ -228,15 +228,20 @@ async def main():
             print("MCP 连接成功可用....")
 
             # 获取并打印所有资源
-            print("\n--- 获取 MCP 资源 ---")
+            print("\n---1 获取 MCP 静态资源 ---")
             resources = await client.list_resources()
-
-            print("resources->", resources)
 
             for resource in resources:
                 resource_content = await client.read_resource(resource.uri)
                 print(f"resources.content->: {resource_content}")
 
+
+            print("\n---2 获取 MCP 动态资源 ---")
+            table_structure = await client.read_resource("database://table/classes/structure")
+            print(f"resources.table_structure->: {table_structure}")
+
+            table_data = await client.read_resource("database://table/classes/data")
+            print(f"resources.table_data->: {table_data}")
 
     except KeyboardInterrupt:
         print("\n\n程序被用户中断")
@@ -244,7 +249,7 @@ async def main():
         print(f"\n程序运行错误: {e}")
     finally:
         await client.cleanup()
-        print("--- 释放 MCP 连接 ---")
+        print("\n\n--- 释放 MCP 连接 ---")
 
 
 if __name__ == "__main__":
