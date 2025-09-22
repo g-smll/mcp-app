@@ -94,22 +94,22 @@ class MCPClient:
     async def list_tools(self) -> List[Tool]:
         """获取可用工具列表"""
         if not self.session:
-            print("未建立连接")
+            # print("未建立连接")
             return []
             
         try:
-            print("正在获取工具列表...")
+            # print("正在获取工具列表...")
             result = await self.session.list_tools()
             self.tools = result.tools
             
-            print(f"发现 {len(self.tools)} 个工具:")
-            for i, tool in enumerate(self.tools, 1):
-                print(f"  {i}. {tool.name}: {tool.description}")
+            # print(f"发现 {len(self.tools)} 个工具:")
+            # for i, tool in enumerate(self.tools, 1):
+            #     print(f"  {i}. {tool.name}: {tool.description}")
                 
             return self.tools
             
         except Exception as e:
-            print(f"获取工具列表失败: {e}")
+            # print(f"获取工具列表失败: {e}")
             return []
 
     async def list_resources(self) -> List[Resource]:
@@ -155,21 +155,21 @@ class MCPClient:
     async def call_tool(self, tool_name: str, arguments: Dict[str, Any] = None) -> Any:
         """调用工具"""
         if not self.session:
-            print("未建立连接")
+            # print("未建立连接")
             return None
             
         if arguments is None:
             arguments = {}
             
         try:
-            print(f"正在调用工具: {tool_name}")
+            # print(f"正在调用工具: {tool_name}")
             result = await self.session.call_tool(tool_name, arguments)
             
-            print("工具调用成功")
+            # print("工具调用成功")
             return result
             
         except Exception as e:
-            print(f"工具调用失败: {e}")
+            # print(f"工具调用失败: {e}")
             return None
 
     async def read_resource(self, resource_uri: str) -> Any:
@@ -225,7 +225,7 @@ async def main():
             print("MCP 连接成功可用....")
 
             # 获取并打印所有资源
-            print("\n---1 获取 MCP 静态资源 ---")
+            print("\n---1 获取 MCP 静态资源并调用 ---")
             resources = await client.list_resources()
 
             for resource in resources:
@@ -233,14 +233,14 @@ async def main():
                 print(f"resources.content->: {resource_content}")
 
 
-            print("\n---2 获取 MCP 动态资源 ---")
+            print("\n---2 获取 MCP 动态资源并调用 ---")
             table_structure = await client.read_resource("database://table/classes/structure")
             print(f"resources.table_structure->: {table_structure}")
 
             table_data = await client.read_resource("database://table/classes/data")
             print(f"resources.table_data->: {table_data}")
 
-            print("\n---3 获取 MCP Prompt 服务 ---")
+            print("\n---3 获取 MCP Prompt 服务并调用 ---")
             prompts = await client.list_prompts()
             
             # 如果有可用的 prompt，演示调用
@@ -265,6 +265,35 @@ async def main():
                                 print(f"resources.Prompt->: {prompt_result}")
                         except Exception as e:
                             print(f"调用 Prompt {prompt.name} 失败: {e}")
+                    
+                    print("-" * 50)
+
+            print("\n---4 获取 MCP Tool 工具并调用 ---")
+            tools = await client.list_tools()
+            
+            # 如果有可用的 tool，演示调用
+            if tools:
+                for tool in tools:
+                    
+                    # 演示调用工具
+                    if tool.name:
+                        try:
+                            # 根据工具名称构造参数
+                            if tool.name == "execute_complex_query":
+                                # execute_complex_query工具的参数
+                                tool_args = {
+                                    "sql_query": "SELECT * FROM students ",
+                                    "limit": 10
+                                }
+                            else:
+                                # 其他工具的默认参数
+                                tool_args = {}
+                            
+                            tool_result = await client.call_tool(tool.name, tool_args)
+                            print(f"resources.tools->:: {tool_result}")
+                            
+                        except Exception as e:
+                            print(f"调用 Tool {tool.name} 失败: {e}")
                     
                     print("-" * 50)
 
