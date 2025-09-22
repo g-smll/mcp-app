@@ -199,10 +199,7 @@ class MCPClient:
             arguments = {}
             
         try:
-            print(f"正在获取提示词模板: {prompt_name}")
             result = await self.session.get_prompt(prompt_name, arguments)
-            
-            print("提示词模板获取成功")
             return result
             
         except Exception as e:
@@ -242,6 +239,34 @@ async def main():
 
             table_data = await client.read_resource("database://table/classes/data")
             print(f"resources.table_data->: {table_data}")
+
+            print("\n---3 获取 MCP Prompt 服务 ---")
+            prompts = await client.list_prompts()
+            
+            # 如果有可用的 prompt，演示调用
+            if prompts:
+                for prompt in prompts:
+                    # 演示调用第一个 prompt（如果需要参数，可以传入）
+                    if prompt.name:
+                        try:
+                            # 根据 prompt 是否需要参数来调用
+                            if prompt.arguments:
+                                # 构造参数字典
+                                prompt_args = {
+                                    "query_description": "查询学生表",
+                                    "table_name": "students"
+                                }
+                                
+                                prompt_result = await client.get_prompt(prompt.name, prompt_args)
+                                print(f"resources.Prompt->: {prompt_result}")
+                            else:
+                                # 不需要参数的 prompt
+                                prompt_result = await client.get_prompt(prompt.name)
+                                print(f"resources.Prompt->: {prompt_result}")
+                        except Exception as e:
+                            print(f"调用 Prompt {prompt.name} 失败: {e}")
+                    
+                    print("-" * 50)
 
     except KeyboardInterrupt:
         print("\n\n程序被用户中断")
