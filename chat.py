@@ -42,6 +42,12 @@ class DeepSeekChat:
         # 对话历史
         self.conversation_history: List[Dict[str, str]] = []
         
+        # 数据分析专家系统prompt
+        self.system_prompt = "你是数据分析专家"
+        
+        # 初始化对话历史，添加系统prompt
+        self.add_message("system", self.system_prompt)
+        
         # MCP 客户端
         self.mcp_client = None
         self.mcp_tools = []
@@ -224,24 +230,30 @@ class DeepSeekChat:
             **self.model_params,
             "messages": self.conversation_history
         }
-        
+        # print(f"构建request_data->" + json.dumps(request_data, ensure_ascii=False, indent=2))
+
         # 如果没有工具，移除 tools 字段
         if not self.mcp_tools:
             request_data.pop("tools", None)
+        # print(f"构建mcp_tools->" + json.dumps(request_data, ensure_ascii=False, indent=2))
         
         try:
             # 发送请求
+            # print(f"发送request_data->" + json.dumps(request_data, ensure_ascii=False, indent=2))
+            logger.info(f"LLM 模型请求: {json.dumps(request_data, ensure_ascii=False, indent=2)}")
             response = self.session.post(
                 self.api_url,
                 json=request_data,
-                timeout=30
+                timeout=90
             )
+
             
             if response.status_code != 200:
                 logger.error(f"API 请求失败: {response.status_code} - {response.text}")
                 return f"API 请求失败: {response.status_code}"
             
             response_data = response.json()
+            # print(f"响应response_data->" + json.dumps(response_data, ensure_ascii=False, indent=2))
             
             if 'choices' not in response_data or not response_data['choices']:
                 logger.error("API 响应格式错误: 缺少 choices 字段")
@@ -261,6 +273,7 @@ class DeepSeekChat:
                 
                 # 处理工具调用
                 tool_results = await self.handle_tool_calls(message['tool_calls'])
+                logger.info(f"mpc响应: {json.dumps(tool_results, ensure_ascii=False, indent=2)}")
                 
                 # 添加工具结果到历史
                 for result in tool_results:
@@ -270,11 +283,12 @@ class DeepSeekChat:
                 request_data["messages"] = self.conversation_history
                 if not self.mcp_tools:
                     request_data.pop("tools", None)
-                
+
+                logger.info(f"LLM+mcp模型请求: {json.dumps(request_data, ensure_ascii=False, indent=2)}")
                 response = self.session.post(
                     self.api_url,
                     json=request_data,
-                    timeout=30
+                    timeout=90
                 )
                 
                 if response.status_code != 200:
@@ -282,6 +296,7 @@ class DeepSeekChat:
                     return f"工具调用后的 API 请求失败: {response.status_code}"
                 
                 response_data = response.json()
+                logger.info(f"LLM+mcp模型响应: {json.dumps(response_data, ensure_ascii=False, indent=2)}")
                 
                 if 'choices' not in response_data or not response_data['choices']:
                     logger.error("工具调用后的 API 响应格式错误")
@@ -291,6 +306,8 @@ class DeepSeekChat:
             
             # 获取最终回复内容
             ai_response = message.get('content', '')
+            logger.info(f"直接访问: {ai_response}")
+
             
             # 添加 AI 回复到历史
             self.add_message("assistant", ai_response)
@@ -347,7 +364,7 @@ def print_welcome():
     """打印欢迎信息"""
     print("=" * 60)
     print("🤖 DeepSeek-V3 对话客户端")
-    print("=" * 60)
+    print('\n')
     print("输入消息开始对话")
     print("特殊命令:")
     print("  - 'quit' 或 'exit': 退出程序")
@@ -355,7 +372,7 @@ def print_welcome():
     print("  - 'params': 显示模型参数")
     print("  - 'history': 显示对话历史")
     print("  - 'tools': 显示可用工具")
-    print("-" * 60)
+    print("=" * 60)
 
 
 def load_config():
@@ -370,10 +387,6 @@ def load_config():
         print("错误: 请在 .env 文件中设置 SILICONFLOW_API_TOKEN")
         print("示例: SILICONFLOW_API_TOKEN=your_token_here")
         exit(1)
-    
-    print(f"API URL: {api_url}")
-    print(f"MCP 服务器 URL: {mcp_server_url}")
-    
     return api_url, api_token, mcp_server_url
 
 
@@ -382,13 +395,26 @@ async def main():
     try:
         # 加载配置
         api_url, api_token, mcp_server_url = load_config()
+        print("=" * 60)
+        print(f"1：初始化.env配置...")
+        print(f"API URL: {api_url}")
+        print(f"MCP 服务器 URL: {mcp_server_url}")
+        print("=" * 60)
+        print('\n')
         
         # 初始化客户端
         client = DeepSeekChat(api_url, api_token)
+        print("=" * 60)
+        print(f"2：初始化deepseek client...")
+        print("=" * 60)
+        print('\n')
         
         # 尝试初始化 MCP 客户端
-        print(f"正在连接 MCP 服务器: {mcp_server_url}")
         await client.init_mcp_client(mcp_server_url)
+        print("=" * 60)
+        print(f"3：初始化mcp client...")
+        print("=" * 60)
+        print('\n')
         
         # 打印欢迎信息
         print_welcome()
